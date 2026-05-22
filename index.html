@@ -124,32 +124,55 @@ tailwind.config = {
 const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
 /* ------------------------------------------------------------------
-   STORAGE  ─ unified async wrapper.
-   Uses window.storage when available (Claude artifact preview),
-   falls back to localStorage when deployed (Cloudflare, self-host).
+   STORAGE  ─ Cloudflare D1 sync layer with localStorage as cache.
+   - If a sync token is configured: API is source of truth, cache mirrors it.
+   - If not: works fully offline via localStorage. Same data shape both ways.
 ------------------------------------------------------------------- */
-const Storage = {
-  available: typeof window !== 'undefined' && !!window.storage,
-  async get(key) {
+const KEY = 'madinah_v1';
+const TOKEN_KEY = 'madinah_token';
+const ENDPOINT = '/api/state';
+
+const Sync = {
+  getToken() { try { return localStorage.getItem(TOKEN_KEY); } catch { return null; } },
+  setToken(t) {
     try {
-      if (Storage.available) {
-        const r = await window.storage.get(key);
-        return r ? JSON.parse(r.value) : null;
-      }
-      const v = localStorage.getItem(key);
-      return v ? JSON.parse(v) : null;
-    } catch (e) { return null; }
+      if (t) localStorage.setItem(TOKEN_KEY, t);
+      else localStorage.removeItem(TOKEN_KEY);
+    } catch (e) { console.warn('token write failed', e); }
   },
-  async set(key, value) {
-    const str = JSON.stringify(value);
-    try {
-      if (Storage.available) await window.storage.set(key, str);
-      else localStorage.setItem(key, str);
-    } catch (e) { console.warn('Storage write failed', e); }
+  configured() { return !!this.getToken(); },
+  async load() {
+    const token = this.getToken();
+    if (!token) throw new Error('NO_TOKEN');
+    const r = await fetch(ENDPOINT, { headers: { 'Authorization': `Bearer ${token}` } });
+    if (r.status === 401) throw new Error('UNAUTHORIZED');
+    if (!r.ok) throw new Error(`HTTP_${r.status}`);
+    return await r.json();
+  },
+  async save(state) {
+    const token = this.getToken();
+    if (!token) throw new Error('NO_TOKEN');
+    const r = await fetch(ENDPOINT, {
+      method: 'PUT',
+      headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(state),
+    });
+    if (r.status === 401) throw new Error('UNAUTHORIZED');
+    if (!r.ok) throw new Error(`HTTP_${r.status}`);
+    return await r.json().catch(() => ({}));
   },
 };
 
-const KEY = 'madinah_v1';
+const Cache = {
+  read() {
+    try { const v = localStorage.getItem(KEY); return v ? JSON.parse(v) : null; }
+    catch { return null; }
+  },
+  write(state) {
+    try { localStorage.setItem(KEY, JSON.stringify(state)); }
+    catch (e) { console.warn('cache write failed', e); }
+  },
+};
 
 /* ------------------------------------------------------------------
    ICONS  ─ inline SVG (lucide-style)
@@ -271,21 +294,72 @@ const SEED = () => ({
 function App() {
   const [state, setState] = useState(null);
   const [loaded, setLoaded] = useState(false);
+  const [syncStatus, setSyncStatus] = useState('idle'); /* idle | saving | synced | offline | unauth | local */
+  const [setupOpen, setSetupOpen]   = useState(false);
 
-  /* Load once */
+  /* Merge helper so we never lose new SEED keys when DB shape evolves */
+  const hydrate = (data) => ({ ...SEED(), ...data, ui: { ...SEED().ui, ...(data?.ui || {}) } });
+
+  /* Initial load */
   useEffect(() => { (async () => {
-    const raw = await Storage.get(KEY);
-    if (raw && raw.habits) setState({ ...SEED(), ...raw, ui: { ...SEED().ui, ...(raw.ui||{}) } });
-    else setState(SEED());
+    const cache = Cache.read();
+
+    if (!Sync.configured()) {
+      const initial = cache && cache.habits ? hydrate(cache) : SEED();
+      setState(initial);
+      setSyncStatus('local');
+      setLoaded(true);
+      return;
+    }
+
+    try {
+      const remote = await Sync.load();
+      const remoteEmpty   = !remote?.habits || remote.habits.length === 0;
+      const cacheHasData  = cache && cache.habits && cache.habits.length > 0;
+
+      if (remoteEmpty && cacheHasData) {
+        /* First-time sync: push local up so we don't lose it */
+        await Sync.save(cache);
+        setState(hydrate(cache));
+      } else if (remoteEmpty) {
+        const seed = SEED();
+        await Sync.save(seed);
+        setState(seed);
+      } else {
+        setState(hydrate(remote));
+      }
+      setSyncStatus('synced');
+    } catch (e) {
+      if (e.message === 'UNAUTHORIZED') {
+        Sync.setToken(null);
+        setState(cache && cache.habits ? hydrate(cache) : SEED());
+        setSyncStatus('unauth');
+        setSetupOpen(true);
+      } else {
+        setState(cache && cache.habits ? hydrate(cache) : SEED());
+        setSyncStatus('offline');
+      }
+    }
     setLoaded(true);
   })(); }, []);
 
-  /* Persist on change (debounced via microtask) */
+  /* Persist on change: localStorage immediately, API debounced */
   const skipFirst = useRef(true);
+  const saveTimer = useRef(null);
   useEffect(() => {
     if (!state) return;
     if (skipFirst.current) { skipFirst.current = false; return; }
-    Storage.set(KEY, state);
+    Cache.write(state);
+    if (!Sync.configured()) return;
+    setSyncStatus('saving');
+    clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(async () => {
+      try { await Sync.save(state); setSyncStatus('synced'); }
+      catch (e) {
+        if (e.message === 'UNAUTHORIZED') { Sync.setToken(null); setSyncStatus('unauth'); setSetupOpen(true); }
+        else { setSyncStatus('offline'); }
+      }
+    }, 800);
   }, [state]);
 
   if (!loaded || !state) {
@@ -295,19 +369,50 @@ function App() {
   const setView = (view) => setState(s => ({ ...s, ui: { ...s.ui, view }}));
   const setDate = (k)    => setState(s => ({ ...s, ui: { ...s.ui, selectedDate: k }}));
 
+  const connectWithToken = async (token) => {
+    Sync.setToken(token);
+    setSyncStatus('saving');
+    try {
+      const remote = await Sync.load();
+      const remoteEmpty = !remote?.habits || remote.habits.length === 0;
+      if (remoteEmpty) { await Sync.save(state); }
+      else { setState(hydrate(remote)); }
+      setSyncStatus('synced');
+      setSetupOpen(false);
+    } catch (e) {
+      if (e.message === 'UNAUTHORIZED') {
+        Sync.setToken(null);
+        setSyncStatus('unauth');
+        alert('That token was rejected. Check the SYNC_TOKEN environment variable in your Cloudflare Pages settings (case-sensitive, no whitespace).');
+      } else {
+        setSyncStatus('offline');
+        alert('Could not reach the sync endpoint: ' + e.message + '\\nMake sure /api/state is deployed and D1 is bound as "DB".');
+      }
+    }
+  };
+
+  const disconnect = () => {
+    if (!confirm('Stop syncing on this device? Local data stays put.')) return;
+    Sync.setToken(null);
+    setSyncStatus('local');
+  };
+
   return (
     <div className="min-h-screen">
-      <Header state={state} setState={setState} setView={setView} setDate={setDate} />
+      <Header state={state} setState={setState} setView={setView} setDate={setDate}
+        syncStatus={syncStatus} onConfigureSync={()=>setSetupOpen(true)} />
       <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pb-24">
         {state.ui.view === 'today'  && <TodayView state={state} setState={setState} />}
         {state.ui.view === 'habits' && <HabitsView state={state} setState={setState} />}
         {state.ui.view === 'tasks'  && <TasksView state={state} setState={setState} />}
         {state.ui.view === 'matrix' && <MatrixView state={state} setState={setState} />}
-        {state.ui.view === 'stats'  && <StatsView state={state} setState={setState} />}
+        {state.ui.view === 'stats'  && <StatsView state={state} setState={setState}
+            syncStatus={syncStatus} onConfigureSync={()=>setSetupOpen(true)} onDisconnect={disconnect}/>}
       </main>
       <footer className="text-center pb-8 text-xs text-ink-500 font-mono tracking-wide">
-        MADINAH · COMMAND DECK · v1.0 · {Storage.available ? 'artifact storage' : 'local storage'}
+        MADINAH · COMMAND DECK · v1.1 · {Sync.configured() ? 'cloudflare d1' : 'local only'}
       </footer>
+      {setupOpen && <TokenSetupModal current={Sync.getToken()} onClose={()=>setSetupOpen(false)} onSubmit={connectWithToken}/>}
     </div>
   );
 }
@@ -315,7 +420,7 @@ function App() {
 /* ------------------------------------------------------------------
    HEADER  ─ date, view tabs, quick add
 ------------------------------------------------------------------- */
-function Header({ state, setState, setView, setDate }) {
+function Header({ state, setState, setView, setDate, syncStatus, onConfigureSync }) {
   const today = new Date();
   const sel = parseKey(state.ui.selectedDate || todayKey());
   const dayName = DAY_NAMES[sel.getDay()];
@@ -372,6 +477,8 @@ function Header({ state, setState, setView, setDate }) {
           </div>
 
           <div className="hidden sm:flex items-center gap-3">
+            <SyncBadge status={syncStatus} onClick={onConfigureSync}/>
+            <div className="h-10 w-px bg-ink-700"/>
             <div className="text-right">
               <div className="text-[10px] text-bone-400 font-mono tracking-widest">DAY STREAK</div>
               <div className="font-display text-2xl text-strategy flex items-center gap-1.5 leading-none mt-1 justify-end">
@@ -401,6 +508,7 @@ function Header({ state, setState, setView, setDate }) {
             })}
           </nav>
           <div className="flex items-center gap-2">
+            <span className="sm:hidden"><SyncBadge status={syncStatus} onClick={onConfigureSync}/></span>
             <button onClick={()=>setDate(fmtKey(addDays(sel,-1)))}
               className="btn w-8 h-8 rounded-lg border border-ink-700 hover:bg-ink-800 flex items-center justify-center text-bone-300">‹</button>
             <button onClick={()=>setDate(todayKey())}
@@ -1177,7 +1285,7 @@ function MatrixView({ state, setState }) {
 /* ------------------------------------------------------------------
    STATS VIEW
 ------------------------------------------------------------------- */
-function StatsView({ state, setState }) {
+function StatsView({ state, setState, syncStatus, onConfigureSync, onDisconnect }) {
   /* 90-day pillar performance */
   const pillarStats = useMemo(() => {
     const today = new Date();
@@ -1296,7 +1404,30 @@ function StatsView({ state, setState }) {
         </div>
       </div>
 
+      <SyncCard status={syncStatus} onConfigure={onConfigureSync} onDisconnect={onDisconnect}/>
       <DangerZone state={state} setState={setState}/>
+    </div>
+  );
+}
+
+function SyncCard({ status, onConfigure, onDisconnect }) {
+  const connected = status === 'synced' || status === 'saving' || status === 'offline';
+  const label = {
+    idle:'…', local:'Local only',
+    saving:'Saving to D1…',
+    synced:'In sync with Cloudflare D1',
+    offline:'Connected, but currently offline',
+    unauth:'Token rejected',
+  }[status] || status;
+  return (
+    <div className="card p-5">
+      <div className="text-[10px] font-mono tracking-widest text-bone-400">SYNC</div>
+      <div className="font-display text-xl text-bone-100 mt-1 mb-1">Cloudflare D1</div>
+      <div className="text-sm text-bone-400 mb-3">{label}</div>
+      <div className="flex flex-wrap gap-2">
+        <button onClick={onConfigure} className="btn px-3 py-2 rounded-lg border border-ink-700 hover:bg-ink-800 text-bone-300 text-sm">{connected || status === 'unauth' ? 'Change token' : 'Connect'}</button>
+        {connected && <button onClick={onDisconnect} className="btn px-3 py-2 rounded-lg border border-combat/40 text-combat hover:bg-combat/10 text-sm">Disconnect on this device</button>}
+      </div>
     </div>
   );
 }
@@ -1368,6 +1499,57 @@ function Field({ label, children }) {
       <div className="text-[10px] font-mono tracking-widest text-bone-400 mb-1.5">{label.toUpperCase()}</div>
       {children}
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------
+   SYNC BADGE  ─ tiny dot showing D1 connection status
+------------------------------------------------------------------- */
+function SyncBadge({ status, onClick }) {
+  const map = {
+    idle:    { text:'…',         color:'#9a9788' },
+    local:   { text:'LOCAL',     color:'#9a9788' },
+    saving:  { text:'SAVING',    color:'#f59e0b' },
+    synced:  { text:'D1',        color:'#10b981' },
+    offline: { text:'OFFLINE',   color:'#ef4444' },
+    unauth:  { text:'UNAUTHED',  color:'#ef4444' },
+  };
+  const m = map[status] || map.idle;
+  const pulse = status === 'saving';
+  return (
+    <button onClick={onClick} title="Configure D1 sync"
+      className="btn flex items-center gap-1.5 px-2.5 py-1.5 rounded-md border border-ink-700 hover:bg-ink-800">
+      <span className={`w-1.5 h-1.5 rounded-full ${pulse ? 'animate-pulse' : ''}`} style={{ background: m.color, boxShadow: `0 0 8px ${m.color}88` }}/>
+      <span className="font-mono text-[10px] tracking-widest" style={{ color: m.color }}>{m.text}</span>
+    </button>
+  );
+}
+
+/* ------------------------------------------------------------------
+   TOKEN SETUP  ─ enter the SYNC_TOKEN env var to connect to D1
+------------------------------------------------------------------- */
+function TokenSetupModal({ current, onClose, onSubmit }) {
+  const [token, setToken] = useState(current || '');
+  const submit = () => { if (token.trim()) onSubmit(token.trim()); };
+  return (
+    <Modal onClose={onClose} title="Connect to Cloudflare D1">
+      <div className="text-sm text-bone-300 leading-relaxed">
+        Paste the value of the <code className="font-mono text-strategy bg-ink-800 px-1.5 py-0.5 rounded">SYNC_TOKEN</code> environment variable you set in your Cloudflare Pages project. Same token on every device that should sync.
+      </div>
+      <Field label="Sync token">
+        <input autoFocus type="password" value={token} onChange={e=>setToken(e.target.value)}
+          onKeyDown={e=>{ if (e.key==='Enter') submit(); }}
+          placeholder="•••••••••••••••"
+          className="w-full bg-ink-800 border border-ink-700 rounded-lg px-3 py-2 text-bone-100 font-mono"/>
+      </Field>
+      <div className="text-xs text-bone-400">
+        Stored in this browser only. On first connect, if D1 is empty your local data is pushed up. Otherwise D1's data replaces what's here.
+      </div>
+      <div className="flex justify-end gap-2 pt-2">
+        <button onClick={onClose} className="btn px-4 py-2 rounded-lg border border-ink-700 text-bone-300 text-sm">Later</button>
+        <button onClick={submit} className="btn px-4 py-2 rounded-lg bg-strategy text-ink-950 font-semibold text-sm">Connect</button>
+      </div>
+    </Modal>
   );
 }
 
