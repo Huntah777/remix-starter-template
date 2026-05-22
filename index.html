@@ -1,0 +1,1378 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Madinah · Command Deck</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600;9..144,700&family=Manrope:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      colors: {
+        ink:    { 950: '#0a0a0b', 900: '#101012', 800: '#17171b', 700: '#1f1f24', 600: '#2a2a31', 500: '#3a3a44' },
+        bone:   { 50: '#fafaf7', 100: '#f4f3ee', 200: '#e6e4dc', 300: '#c9c6b8', 400: '#9a9788' },
+        deen:      '#10b981',
+        tech:      '#22d3ee',
+        combat:    '#ef4444',
+        strategy:  '#f59e0b',
+        character: '#a78bfa',
+      },
+      fontFamily: {
+        display: ['Fraunces', 'ui-serif', 'Georgia', 'serif'],
+        sans:    ['Manrope', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        mono:    ['"JetBrains Mono"', 'ui-monospace', 'monospace'],
+      },
+    }
+  }
+}
+</script>
+
+<style>
+  html, body { background: #0a0a0b; color: #f4f3ee; -webkit-font-smoothing: antialiased; }
+  body { font-family: 'Manrope', system-ui, sans-serif; }
+  .font-display { font-family: 'Fraunces', serif; font-optical-sizing: auto; }
+  .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+  /* Subtle Islamic-geometric tessellation watermark */
+  .bg-tess {
+    background-color: #0a0a0b;
+    background-image:
+      radial-gradient(circle at 20% 10%, rgba(245,158,11,0.04), transparent 40%),
+      radial-gradient(circle at 80% 90%, rgba(16,185,129,0.03), transparent 40%),
+      url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'><g fill='none' stroke='%23ffffff' stroke-opacity='0.025' stroke-width='1'><path d='M32 0 L40 16 L56 16 L48 32 L56 48 L40 48 L32 64 L24 48 L8 48 L16 32 L8 16 L24 16 Z'/><circle cx='32' cy='32' r='10'/></g></svg>");
+    background-size: auto, auto, 64px 64px;
+  }
+
+  .card { background: linear-gradient(180deg, #131317 0%, #101012 100%); border: 1px solid #1f1f24; border-radius: 14px; }
+  .card-soft { background: #131317; border: 1px solid #1f1f24; border-radius: 12px; }
+  .divider { border-top: 1px solid #1f1f24; }
+
+  .scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+  .scrollbar::-webkit-scrollbar-thumb { background: #2a2a31; border-radius: 8px; }
+  .scrollbar::-webkit-scrollbar-track { background: transparent; }
+
+  .btn { transition: all 160ms ease; }
+  .btn:hover { transform: translateY(-1px); }
+  .glow-deen      { box-shadow: 0 0 0 1px rgba(16,185,129,.25), 0 8px 24px -12px rgba(16,185,129,.45); }
+  .glow-tech      { box-shadow: 0 0 0 1px rgba(34,211,238,.25), 0 8px 24px -12px rgba(34,211,238,.45); }
+  .glow-combat    { box-shadow: 0 0 0 1px rgba(239,68,68,.25), 0 8px 24px -12px rgba(239,68,68,.45); }
+  .glow-strategy  { box-shadow: 0 0 0 1px rgba(245,158,11,.25), 0 8px 24px -12px rgba(245,158,11,.45); }
+  .glow-character { box-shadow: 0 0 0 1px rgba(167,139,250,.25), 0 8px 24px -12px rgba(167,139,250,.45); }
+
+  /* time grid */
+  .now-line {
+    position: absolute; left: 56px; right: 0; height: 1px;
+    background: linear-gradient(90deg, #ef4444 0%, rgba(239,68,68,0.0) 100%);
+    z-index: 5;
+  }
+  .now-dot { position: absolute; left: 50px; width: 10px; height: 10px; border-radius: 999px; background:#ef4444; box-shadow: 0 0 0 4px rgba(239,68,68,.18); z-index:6; transform: translate(-50%, -50%); }
+
+  /* checkbox */
+  .tick { width: 18px; height: 18px; border-radius: 6px; border: 1.5px solid #3a3a44; display:inline-flex; align-items:center; justify-content:center; transition: all 140ms ease; flex-shrink:0; }
+  .tick.on { background:#10b981; border-color:#10b981; }
+  .tick.on svg { color:#0a0a0b; }
+
+  /* fade in */
+  @keyframes fadeUp { from { opacity:0; transform: translateY(6px); } to { opacity:1; transform:none; } }
+  .fadeUp { animation: fadeUp 320ms cubic-bezier(.2,.7,.2,1) both; }
+
+  /* heat squares */
+  .heat-0 { background:#17171b; }
+  .heat-1 { background: rgba(16,185,129,.25); }
+  .heat-2 { background: rgba(16,185,129,.55); }
+  .heat-3 { background: rgba(16,185,129,.85); }
+  .heat-4 { background: #10b981; }
+
+  /* Hide spinner on number input */
+  input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin:0; }
+  input[type=number] { -moz-appearance: textfield; }
+
+  /* Quadrant accent stripes */
+  .q-do        { background: linear-gradient(180deg, rgba(239,68,68,.10), transparent 50%); border-color: rgba(239,68,68,.30) !important; }
+  .q-plan      { background: linear-gradient(180deg, rgba(34,211,238,.10), transparent 50%); border-color: rgba(34,211,238,.30) !important; }
+  .q-delegate  { background: linear-gradient(180deg, rgba(245,158,11,.10), transparent 50%); border-color: rgba(245,158,11,.30) !important; }
+  .q-eliminate { background: linear-gradient(180deg, rgba(120,113,108,.10), transparent 50%); border-color: rgba(120,113,108,.30) !important; }
+
+  .drag-target { outline: 2px dashed rgba(244,243,238,.25); outline-offset: -6px; }
+
+  /* Focus ring */
+  input:focus, select:focus, textarea:focus, button:focus { outline: none; }
+  input:focus-visible, select:focus-visible, textarea:focus-visible {
+    box-shadow: 0 0 0 2px rgba(245,158,11,.45);
+    border-color: #f59e0b !important;
+  }
+
+  /* Logo mark */
+  .mark { width:34px; height:34px; border-radius:9px; background: radial-gradient(circle at 30% 30%, #f59e0b, #b45309 70%); display:flex; align-items:center; justify-content:center; box-shadow: inset 0 0 0 1px rgba(0,0,0,.4), 0 6px 20px -8px rgba(245,158,11,.6); }
+</style>
+</head>
+
+<body class="bg-tess min-h-screen">
+<div id="root"></div>
+
+<script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+/* ------------------------------------------------------------------
+   STORAGE  ─ unified async wrapper.
+   Uses window.storage when available (Claude artifact preview),
+   falls back to localStorage when deployed (Cloudflare, self-host).
+------------------------------------------------------------------- */
+const Storage = {
+  available: typeof window !== 'undefined' && !!window.storage,
+  async get(key) {
+    try {
+      if (Storage.available) {
+        const r = await window.storage.get(key);
+        return r ? JSON.parse(r.value) : null;
+      }
+      const v = localStorage.getItem(key);
+      return v ? JSON.parse(v) : null;
+    } catch (e) { return null; }
+  },
+  async set(key, value) {
+    const str = JSON.stringify(value);
+    try {
+      if (Storage.available) await window.storage.set(key, str);
+      else localStorage.setItem(key, str);
+    } catch (e) { console.warn('Storage write failed', e); }
+  },
+};
+
+const KEY = 'madinah_v1';
+
+/* ------------------------------------------------------------------
+   ICONS  ─ inline SVG (lucide-style)
+------------------------------------------------------------------- */
+const I = {
+  check:   (p={}) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>,
+  plus:    (p={}) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>,
+  x:       (p={}) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>,
+  cal:     (p={}) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
+  flame:   (p={}) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 17c1.4 0 2.5-1.1 2.5-2.5 0-1.5-1-2.4-1.5-3 0-.8.5-1.5 1.5-2 .5 1.5 2.5 1.5 3.5 3.5.5 1 .5 2.5-.5 4-2 3-7 3-9 0-1-1.5-1-3 0-4.5C7.5 13 8.5 13.5 8.5 14.5Z"/><path d="M9 11c0-2 .5-3.5 2-5 .5 1 .5 2 0 3 .5.5 1 1.5 1.5 2"/></svg>,
+  list:    (p={}) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><circle cx="4" cy="6" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="18" r="1"/></svg>,
+  grid:    (p={}) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>,
+  clock:   (p={}) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15.5 14"/></svg>,
+  bar:     (p={}) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6"  y1="20" x2="6"  y2="14"/><line x1="3"  y1="20" x2="21" y2="20"/></svg>,
+  trash:   (p={}) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>,
+  edit:    (p={}) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4Z"/></svg>,
+  chev:    (p={}) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><polyline points="6 9 12 15 18 9"/></svg>,
+  star:    (p={}) => <svg {...p} viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15 8.5 22 9.3 17 14.1 18.2 21 12 17.8 5.8 21 7 14.1 2 9.3 9 8.5"/></svg>,
+  moon:    (p={}) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.8A8.5 8.5 0 0 1 11.2 3a8.5 8.5 0 1 0 9.8 9.8Z"/></svg>,
+  drag:    (p={}) => <svg {...p} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><circle cx="9" cy="6" r="1.2"/><circle cx="9" cy="12" r="1.2"/><circle cx="9" cy="18" r="1.2"/><circle cx="15" cy="6" r="1.2"/><circle cx="15" cy="12" r="1.2"/><circle cx="15" cy="18" r="1.2"/></svg>,
+};
+
+/* ------------------------------------------------------------------
+   PILLARS  ─ Abdul-Malik's polymath framework
+------------------------------------------------------------------- */
+const PILLARS = [
+  { id:'deen',      name:'Deen',      color:'#10b981', tw:'deen',      arabic:'الدين'  },
+  { id:'tech',      name:'Tech',      color:'#22d3ee', tw:'tech',      arabic:'التقنية' },
+  { id:'combat',    name:'Combat',    color:'#ef4444', tw:'combat',    arabic:'القتال' },
+  { id:'strategy',  name:'Strategy',  color:'#f59e0b', tw:'strategy',  arabic:'الاستراتيجية' },
+  { id:'character', name:'Character', color:'#a78bfa', tw:'character', arabic:'الأخلاق' },
+];
+const pillarById = (id) => PILLARS.find(p => p.id === id) || PILLARS[0];
+
+/* ------------------------------------------------------------------
+   QUADRANTS  ─ Eisenhower
+------------------------------------------------------------------- */
+const QUADS = [
+  { id:'do',        title:'Do',        sub:'Urgent · Important',         hint:'Crisis. Deadlines. Do it now.', cls:'q-do' },
+  { id:'plan',      title:'Schedule',  sub:'Important · Not Urgent',     hint:'Strategic work. Block time for this.', cls:'q-plan' },
+  { id:'delegate',  title:'Delegate',  sub:'Urgent · Not Important',     hint:'Interruptions. Pass them on.', cls:'q-delegate' },
+  { id:'eliminate', title:'Eliminate', sub:'Not Urgent · Not Important', hint:'Distractions. Cut without guilt.', cls:'q-eliminate' },
+];
+
+/* ------------------------------------------------------------------
+   DATE HELPERS
+------------------------------------------------------------------- */
+const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+const DAY_SHORT = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+const fmtKey = (d) => {
+  const y = d.getFullYear(), m = String(d.getMonth()+1).padStart(2,'0'), day = String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+};
+const parseKey = (s) => { const [y,m,d] = s.split('-').map(Number); return new Date(y, m-1, d); };
+const sameDay = (a,b) => a.getFullYear()===b.getFullYear() && a.getMonth()===b.getMonth() && a.getDate()===b.getDate();
+const addDays = (d, n) => { const r = new Date(d); r.setDate(r.getDate()+n); return r; };
+const todayKey = () => fmtKey(new Date());
+
+/* Convert minutes from midnight ↔ "HH:MM" */
+const toHM = (mins) => `${String(Math.floor(mins/60)).padStart(2,'0')}:${String(mins%60).padStart(2,'0')}`;
+const fromHM = (s) => { const [h,m] = s.split(':').map(Number); return (h||0)*60 + (m||0); };
+
+/* ------------------------------------------------------------------
+   DEFAULT SEED  ─ Abdul-Malik's routine
+------------------------------------------------------------------- */
+const SEED = () => ({
+  habits: [
+    /* Deen */
+    { id:'h-fajr',    name:'Fajr in jama\u02BBah',      pillar:'deen',      days:[0,1,2,3,4,5,6], created: Date.now() },
+    { id:'h-morn',    name:'Morning adhkar',             pillar:'deen',      days:[0,1,2,3,4,5,6], created: Date.now() },
+    { id:'h-eve',     name:'Evening adhkar',             pillar:'deen',      days:[0,1,2,3,4,5,6], created: Date.now() },
+    { id:'h-quran',   name:'Qur\u02BCan ─ daily portion',pillar:'deen',      days:[0,1,2,3,4,5,6], created: Date.now() },
+    { id:'h-witr',    name:'Witr',                       pillar:'deen',      days:[0,1,2,3,4,5,6], created: Date.now() },
+    /* Tech */
+    { id:'h-tech',    name:'Tech training (non-negotiable)', pillar:'tech',  days:[0,1,2,3,4,5,6], created: Date.now() },
+    /* Combat */
+    { id:'h-gym',     name:'Gym ─ combat session',       pillar:'combat',    days:[2,5],           created: Date.now() }, /* Tue, Fri */
+    { id:'h-drill',   name:'Home bodyweight drills',     pillar:'combat',    days:[1,3,6],         created: Date.now() }, /* Mon, Wed, Sat */
+    { id:'h-tennis',  name:'Tennis with wife',           pillar:'combat',    days:[0],             created: Date.now() }, /* Sunday */
+    /* Strategy */
+    { id:'h-chess',   name:'Chess game + post-mortem',   pillar:'strategy',  days:[0,1,2,3,4,5,6], created: Date.now() },
+    { id:'h-read',    name:'Strategic reading',           pillar:'strategy', days:[1,2,3,4,5,6],   created: Date.now() }, /* not Sun */
+    /* Character */
+    { id:'h-journal', name:'Journal / reflection',        pillar:'character',days:[0,1,2,3,4,5,6], created: Date.now() },
+    /* Fasting Mon/Thu */
+    { id:'h-fast',    name:'Fast (Suhoor \u2192 Maghrib)',pillar:'deen',     days:[1,4],           created: Date.now() },
+  ],
+  /* logs: { 'YYYY-MM-DD': { habitId: true } } */
+  logs: {},
+  tasks: [],   /* { id, title, notes, due, quadrant, listId, done, doneAt, created } */
+  lists: [
+    { id:'l-inbox',  name:'Inbox',     color:'#9a9788' },
+    { id:'l-work',   name:'Work',      color:'#22d3ee' },
+    { id:'l-deen',   name:'Deen',      color:'#10b981' },
+    { id:'l-life',   name:'Life',      color:'#a78bfa' },
+  ],
+  blocks: [
+    /* default time skeleton mirroring his schedule; pillar-coloured */
+    { id:'b-fajr',  title:'Fajr + morning adhkar',  pillar:'deen',     start: 5*60+0,   end: 5*60+45, every:[0,1,2,3,4,5,6] },
+    { id:'b-tech',  title:'Tech training',          pillar:'tech',     start: 6*60+0,   end: 7*60+30, every:[0,1,2,3,4,5,6] },
+    { id:'b-work',  title:'Deep work block',        pillar:'tech',     start: 9*60+30,  end: 12*60+30,every:[0,1,2,3,4,5,6] },
+    { id:'b-zuhr',  title:'Zuhr',                   pillar:'deen',     start: 13*60+0,  end: 13*60+20,every:[0,1,2,3,4,5,6] },
+    { id:'b-pm',    title:'PM work / focus',        pillar:'tech',     start: 14*60+0,  end: 17*60+0, every:[0,1,2,3,4,5,6] },
+    { id:'b-gym',   title:'Gym \u2014 combat',      pillar:'combat',   start: 18*60+0,  end: 19*60+30,every:[2,5]           },
+    { id:'b-drill', title:'Home drills',            pillar:'combat',   start: 18*60+0,  end: 19*60+0, every:[1,3,6]         },
+    { id:'b-ten',   title:'Tennis with wife',       pillar:'combat',   start: 10*60+0,  end: 11*60+0, every:[0]             },
+    { id:'b-mag',   title:'Maghrib + Iftar (M/Th)', pillar:'deen',     start: 19*60+45, end: 20*60+15,every:[0,1,2,3,4,5,6] },
+    { id:'b-chess', title:'Chess + review',         pillar:'strategy', start: 21*60+0,  end: 21*60+45,every:[0,1,2,3,4,5,6] },
+    { id:'b-jrn',   title:'Journal',                pillar:'character',start: 22*60+15, end: 22*60+30,every:[0,1,2,3,4,5,6] },
+  ],
+  ui: { view: 'today', selectedDate: todayKey() },
+});
+
+/* ------------------------------------------------------------------
+   APP
+------------------------------------------------------------------- */
+function App() {
+  const [state, setState] = useState(null);
+  const [loaded, setLoaded] = useState(false);
+
+  /* Load once */
+  useEffect(() => { (async () => {
+    const raw = await Storage.get(KEY);
+    if (raw && raw.habits) setState({ ...SEED(), ...raw, ui: { ...SEED().ui, ...(raw.ui||{}) } });
+    else setState(SEED());
+    setLoaded(true);
+  })(); }, []);
+
+  /* Persist on change (debounced via microtask) */
+  const skipFirst = useRef(true);
+  useEffect(() => {
+    if (!state) return;
+    if (skipFirst.current) { skipFirst.current = false; return; }
+    Storage.set(KEY, state);
+  }, [state]);
+
+  if (!loaded || !state) {
+    return <div className="min-h-screen flex items-center justify-center text-bone-400 font-display italic">Loading the command deck…</div>;
+  }
+
+  const setView = (view) => setState(s => ({ ...s, ui: { ...s.ui, view }}));
+  const setDate = (k)    => setState(s => ({ ...s, ui: { ...s.ui, selectedDate: k }}));
+
+  return (
+    <div className="min-h-screen">
+      <Header state={state} setState={setState} setView={setView} setDate={setDate} />
+      <main className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 pb-24">
+        {state.ui.view === 'today'  && <TodayView state={state} setState={setState} />}
+        {state.ui.view === 'habits' && <HabitsView state={state} setState={setState} />}
+        {state.ui.view === 'tasks'  && <TasksView state={state} setState={setState} />}
+        {state.ui.view === 'matrix' && <MatrixView state={state} setState={setState} />}
+        {state.ui.view === 'stats'  && <StatsView state={state} setState={setState} />}
+      </main>
+      <footer className="text-center pb-8 text-xs text-ink-500 font-mono tracking-wide">
+        MADINAH · COMMAND DECK · v1.0 · {Storage.available ? 'artifact storage' : 'local storage'}
+      </footer>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------
+   HEADER  ─ date, view tabs, quick add
+------------------------------------------------------------------- */
+function Header({ state, setState, setView, setDate }) {
+  const today = new Date();
+  const sel = parseKey(state.ui.selectedDate || todayKey());
+  const dayName = DAY_NAMES[sel.getDay()];
+  const isFastingDay = sel.getDay() === 1 || sel.getDay() === 4;
+
+  /* compute a "today's pillar completion" summary */
+  const dayKey = state.ui.selectedDate;
+  const dayHabits = state.habits.filter(h => h.days.includes(sel.getDay()));
+  const log = state.logs[dayKey] || {};
+  const pct = dayHabits.length ? Math.round(dayHabits.filter(h => log[h.id]).length / dayHabits.length * 100) : 0;
+
+  /* current streak — consecutive days back from selected where >=80% habits done */
+  const streak = useMemo(() => {
+    let s = 0, cursor = new Date(sel);
+    while (true) {
+      const k = fmtKey(cursor);
+      const h = state.habits.filter(x => x.days.includes(cursor.getDay()));
+      const l = state.logs[k] || {};
+      if (!h.length) break;
+      const r = h.filter(x => l[x.id]).length / h.length;
+      if (r >= 0.8) { s++; cursor = addDays(cursor, -1); } else break;
+      if (s > 365) break;
+    }
+    return s;
+  }, [state.logs, state.habits, state.ui.selectedDate]);
+
+  const tabs = [
+    { id:'today',  label:'Today',    icon:I.clock },
+    { id:'habits', label:'Habits',   icon:I.flame },
+    { id:'tasks',  label:'Tasks',    icon:I.list  },
+    { id:'matrix', label:'Matrix',   icon:I.grid  },
+    { id:'stats',  label:'Stats',    icon:I.bar   },
+  ];
+
+  return (
+    <header className="sticky top-0 z-30 backdrop-blur-xl bg-ink-950/70 border-b border-ink-700">
+      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between gap-4 py-4">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="mark">
+              <span className="font-display text-ink-950 font-bold text-lg leading-none">م</span>
+            </div>
+            <div className="min-w-0">
+              <div className="font-display text-xl sm:text-2xl leading-none truncate">
+                <span className="text-bone-100">Command Deck</span>
+                <span className="text-bone-400 italic font-normal"> · {dayName}</span>
+              </div>
+              <div className="text-xs text-bone-400 font-mono tracking-wider mt-1.5 flex items-center gap-2 flex-wrap">
+                <span>{sel.getDate()} {MONTHS[sel.getMonth()]} {sel.getFullYear()}</span>
+                {isFastingDay && <span className="px-1.5 py-0.5 rounded-md bg-deen/15 text-deen border border-deen/30">FASTING DAY</span>}
+                {sameDay(sel, today) && <span className="px-1.5 py-0.5 rounded-md bg-strategy/15 text-strategy border border-strategy/30">TODAY</span>}
+              </div>
+            </div>
+          </div>
+
+          <div className="hidden sm:flex items-center gap-3">
+            <div className="text-right">
+              <div className="text-[10px] text-bone-400 font-mono tracking-widest">DAY STREAK</div>
+              <div className="font-display text-2xl text-strategy flex items-center gap-1.5 leading-none mt-1 justify-end">
+                <I.flame className="w-5 h-5"/> {streak}
+              </div>
+            </div>
+            <div className="h-10 w-px bg-ink-700"/>
+            <div className="text-right">
+              <div className="text-[10px] text-bone-400 font-mono tracking-widest">{dayName.toUpperCase()} COMPLETION</div>
+              <div className="font-display text-2xl text-bone-100 leading-none mt-1">{pct}<span className="text-base text-bone-400">%</span></div>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs + date picker */}
+        <div className="flex items-center justify-between gap-3 pb-3 overflow-x-auto scrollbar">
+          <nav className="flex gap-1">
+            {tabs.map(t => {
+              const Icon = t.icon;
+              const active = state.ui.view === t.id;
+              return (
+                <button key={t.id} onClick={()=>setView(t.id)}
+                  className={`btn px-3.5 py-2 rounded-lg flex items-center gap-2 text-sm whitespace-nowrap ${active ? 'bg-bone-100 text-ink-950 font-semibold' : 'text-bone-300 hover:bg-ink-800'}`}>
+                  <Icon className="w-4 h-4"/>{t.label}
+                </button>
+              );
+            })}
+          </nav>
+          <div className="flex items-center gap-2">
+            <button onClick={()=>setDate(fmtKey(addDays(sel,-1)))}
+              className="btn w-8 h-8 rounded-lg border border-ink-700 hover:bg-ink-800 flex items-center justify-center text-bone-300">‹</button>
+            <button onClick={()=>setDate(todayKey())}
+              className="btn px-3 h-8 rounded-lg border border-ink-700 hover:bg-ink-800 text-xs font-mono tracking-wider text-bone-300">TODAY</button>
+            <button onClick={()=>setDate(fmtKey(addDays(sel,1)))}
+              className="btn w-8 h-8 rounded-lg border border-ink-700 hover:bg-ink-800 flex items-center justify-center text-bone-300">›</button>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+/* ------------------------------------------------------------------
+   TODAY VIEW  ─ Structured-style timeline + tasks + habits
+------------------------------------------------------------------- */
+function TodayView({ state, setState }) {
+  const sel = parseKey(state.ui.selectedDate);
+  const dow = sel.getDay();
+  const dKey = state.ui.selectedDate;
+
+  const habitsToday = state.habits.filter(h => h.days.includes(dow));
+  const log = state.logs[dKey] || {};
+  const toggleHabit = (id) => setState(s => {
+    const cur = (s.logs[dKey] || {})[id];
+    const next = { ...(s.logs[dKey] || {}) };
+    if (cur) delete next[id]; else next[id] = true;
+    return { ...s, logs: { ...s.logs, [dKey]: next } };
+  });
+
+  /* tasks due today or undated and not done */
+  const tasksToday = state.tasks.filter(t => !t.done && (!t.due || t.due === dKey));
+  const overdue    = state.tasks.filter(t => !t.done && t.due && t.due < dKey);
+
+  return (
+    <div className="grid grid-cols-12 gap-4 lg:gap-6 pt-6 fadeUp">
+      {/* Timeline */}
+      <section className="col-span-12 lg:col-span-6">
+        <SectionHeading kicker="01 / Time" title="The day, blocked" sub="Structured-style timeline · click an hour to drop a block"/>
+        <Timeline state={state} setState={setState} dow={dow} dKey={dKey} sel={sel}/>
+      </section>
+
+      {/* Tasks */}
+      <section className="col-span-12 lg:col-span-3">
+        <SectionHeading kicker="02 / Tasks" title="What needs doing" sub="Quick-capture, prioritise, ship"/>
+        <QuickAddTask state={state} setState={setState} defaultDate={dKey}/>
+        {overdue.length > 0 && (
+          <div className="mb-3">
+            <div className="text-[10px] font-mono tracking-widest text-combat mb-1.5">OVERDUE · {overdue.length}</div>
+            {overdue.map(t => <TaskRow key={t.id} t={t} state={state} setState={setState} compact/>) }
+          </div>
+        )}
+        <div className="text-[10px] font-mono tracking-widest text-bone-400 mb-1.5">TODAY · {tasksToday.length}</div>
+        {tasksToday.length === 0
+          ? <EmptyHint text="Inbox zero. Add the next move."/>
+          : tasksToday.map(t => <TaskRow key={t.id} t={t} state={state} setState={setState}/>)}
+      </section>
+
+      {/* Habits */}
+      <section className="col-span-12 lg:col-span-3">
+        <SectionHeading kicker="03 / Discipline" title="Habits for today" sub={`${habitsToday.filter(h=>log[h.id]).length} / ${habitsToday.length} complete`}/>
+        <HabitChecklist habits={habitsToday} log={log} toggle={toggleHabit} state={state}/>
+      </section>
+    </div>
+  );
+}
+
+function SectionHeading({ kicker, title, sub }) {
+  return (
+    <div className="mb-3">
+      <div className="text-[10px] font-mono tracking-[0.18em] text-strategy mb-1">{kicker}</div>
+      <h2 className="font-display text-2xl sm:text-3xl text-bone-100 leading-tight">{title}</h2>
+      {sub && <div className="text-xs text-bone-400 mt-0.5">{sub}</div>}
+    </div>
+  );
+}
+
+function EmptyHint({ text }) {
+  return <div className="card-soft p-4 text-sm text-bone-400 italic text-center">{text}</div>;
+}
+
+/* ------------------------------------------------------------------
+   TIMELINE  (Structured-style vertical day plan)
+------------------------------------------------------------------- */
+function Timeline({ state, setState, dow, dKey, sel }) {
+  const HOUR_PX = 56;
+  const startHour = 5, endHour = 24;
+  const hours = endHour - startHour;
+
+  const blocks = state.blocks.filter(b => b.every.includes(dow));
+  const [editing, setEditing] = useState(null);
+  const [adding, setAdding] = useState(null); /* { start } */
+
+  /* live "now" position */
+  const [nowMin, setNowMin] = useState(() => {
+    const n = new Date(); return n.getHours()*60 + n.getMinutes();
+  });
+  useEffect(() => {
+    const t = setInterval(() => {
+      const n = new Date(); setNowMin(n.getHours()*60 + n.getMinutes());
+    }, 30000);
+    return () => clearInterval(t);
+  }, []);
+
+  const isToday = sameDay(sel, new Date());
+  const nowTop = ((nowMin - startHour*60) / 60) * HOUR_PX;
+  const showNow = isToday && nowMin >= startHour*60 && nowMin <= endHour*60;
+
+  const blockTop = (b) => ((b.start - startHour*60) / 60) * HOUR_PX;
+  const blockHt  = (b) => Math.max(28, ((b.end - b.start) / 60) * HOUR_PX - 4);
+
+  const handleHourClick = (h) => {
+    setAdding({ start: h*60, end: h*60 + 60 });
+  };
+
+  return (
+    <div className="card relative overflow-hidden">
+      <div className="relative scrollbar overflow-y-auto" style={{ maxHeight: '74vh' }}>
+        <div className="relative" style={{ height: hours * HOUR_PX + 24 }}>
+          {/* hour lines */}
+          {Array.from({length: hours+1}).map((_,i) => {
+            const h = startHour + i;
+            return (
+              <div key={i} className="absolute left-0 right-0 flex items-start" style={{ top: i*HOUR_PX }}>
+                <div className="w-14 pr-2 text-right font-mono text-[10px] text-bone-400 tracking-wider pt-0.5">
+                  {String(h%24).padStart(2,'0')}:00
+                </div>
+                <button onClick={()=>handleHourClick(h)}
+                  className="flex-1 h-14 border-t border-ink-700 hover:bg-ink-800/40 transition-colors"
+                  aria-label={`Add block at ${h}:00`}/>
+              </div>
+            );
+          })}
+
+          {/* now indicator */}
+          {showNow && <>
+            <div className="now-dot" style={{ top: nowTop }}/>
+            <div className="now-line" style={{ top: nowTop }}/>
+          </>}
+
+          {/* blocks */}
+          {blocks.map(b => {
+            const p = pillarById(b.pillar);
+            return (
+              <button key={b.id} onClick={()=>setEditing(b)}
+                className="btn absolute left-14 right-3 text-left px-3 py-2 rounded-lg group"
+                style={{
+                  top: blockTop(b),
+                  height: blockHt(b),
+                  background: `linear-gradient(90deg, ${p.color}1a 0%, #131317 60%)`,
+                  border: `1px solid ${p.color}55`,
+                  borderLeft: `3px solid ${p.color}`,
+                }}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="font-medium text-bone-100 truncate text-sm">{b.title}</div>
+                  <div className="font-mono text-[10px] text-bone-400 whitespace-nowrap">{toHM(b.start)}–{toHM(b.end)}</div>
+                </div>
+                <div className="text-[10px] font-mono tracking-wider uppercase mt-0.5" style={{ color: p.color }}>{p.name}</div>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {(editing || adding) && (
+        <BlockModal
+          block={editing}
+          adding={adding}
+          onClose={()=>{ setEditing(null); setAdding(null); }}
+          onSave={(b)=>{
+            setState(s => {
+              const exists = s.blocks.find(x => x.id === b.id);
+              return { ...s, blocks: exists ? s.blocks.map(x=>x.id===b.id?b:x) : [...s.blocks, b] };
+            });
+            setEditing(null); setAdding(null);
+          }}
+          onDelete={(id)=>{
+            setState(s => ({ ...s, blocks: s.blocks.filter(x => x.id !== id) }));
+            setEditing(null);
+          }}
+          currentDow={dow}
+        />
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------
+   BLOCK MODAL
+------------------------------------------------------------------- */
+function BlockModal({ block, adding, onClose, onSave, onDelete, currentDow }) {
+  const isNew = !block;
+  const [title, setTitle] = useState(block?.title || '');
+  const [pillar, setPillar] = useState(block?.pillar || 'tech');
+  const [start, setStart] = useState(toHM(block?.start ?? adding?.start ?? 540));
+  const [end,   setEnd]   = useState(toHM(block?.end   ?? adding?.end   ?? 600));
+  const [days,  setDays]  = useState(block?.every || [currentDow]);
+
+  const toggleDay = (d) => setDays(ds => ds.includes(d) ? ds.filter(x=>x!==d) : [...ds, d].sort());
+
+  const save = () => {
+    if (!title.trim()) return;
+    const startM = fromHM(start), endM = fromHM(end);
+    if (endM <= startM) return;
+    onSave({
+      id: block?.id || `b-${Date.now()}`,
+      title: title.trim(), pillar,
+      start: startM, end: endM,
+      every: days.length ? days : [0,1,2,3,4,5,6],
+    });
+  };
+
+  return (
+    <Modal onClose={onClose} title={isNew ? 'New time block' : 'Edit block'}>
+      <Field label="Title">
+        <input value={title} onChange={e=>setTitle(e.target.value)} autoFocus
+          className="w-full bg-ink-800 border border-ink-700 rounded-lg px-3 py-2 text-bone-100"
+          placeholder="Deep work · Asbab al-Nuzul · etc."/>
+      </Field>
+      <Field label="Pillar">
+        <div className="grid grid-cols-5 gap-2">
+          {PILLARS.map(p => (
+            <button key={p.id} onClick={()=>setPillar(p.id)}
+              className={`btn px-2 py-2 rounded-lg text-xs font-medium ${pillar===p.id ? `glow-${p.tw}` : 'border border-ink-700'}`}
+              style={pillar===p.id ? { background: `${p.color}22`, color: p.color } : { color:'#9a9788' }}>
+              {p.name}
+            </button>
+          ))}
+        </div>
+      </Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="Start">
+          <input type="time" value={start} onChange={e=>setStart(e.target.value)}
+            className="w-full bg-ink-800 border border-ink-700 rounded-lg px-3 py-2 text-bone-100 font-mono"/>
+        </Field>
+        <Field label="End">
+          <input type="time" value={end} onChange={e=>setEnd(e.target.value)}
+            className="w-full bg-ink-800 border border-ink-700 rounded-lg px-3 py-2 text-bone-100 font-mono"/>
+        </Field>
+      </div>
+      <Field label="Repeat on">
+        <div className="flex gap-1.5 flex-wrap">
+          {DAY_SHORT.map((d,i) => (
+            <button key={d} onClick={()=>toggleDay(i)}
+              className={`btn px-2.5 py-1.5 rounded-md text-xs font-mono tracking-wider ${days.includes(i) ? 'bg-strategy text-ink-950 font-semibold' : 'border border-ink-700 text-bone-400'}`}>
+              {d.toUpperCase()}
+            </button>
+          ))}
+        </div>
+      </Field>
+      <div className="flex justify-between gap-2 pt-2">
+        {!isNew && <button onClick={()=>onDelete(block.id)} className="btn px-3 py-2 rounded-lg text-combat border border-combat/30 hover:bg-combat/10 text-sm flex items-center gap-1.5"><I.trash className="w-4 h-4"/>Delete</button>}
+        <div className="flex-1"/>
+        <button onClick={onClose} className="btn px-4 py-2 rounded-lg border border-ink-700 text-bone-300 text-sm">Cancel</button>
+        <button onClick={save} className="btn px-4 py-2 rounded-lg bg-bone-100 text-ink-950 font-semibold text-sm">Save block</button>
+      </div>
+    </Modal>
+  );
+}
+
+/* ------------------------------------------------------------------
+   QUICK ADD TASK
+------------------------------------------------------------------- */
+function QuickAddTask({ state, setState, defaultDate, defaultQuadrant='plan', defaultListId }) {
+  const [title, setTitle] = useState('');
+  const [open, setOpen]   = useState(false);
+  const [quadrant, setQuadrant] = useState(defaultQuadrant);
+  const [due, setDue] = useState(defaultDate || '');
+  const [listId, setListId] = useState(defaultListId || 'l-inbox');
+
+  const submit = () => {
+    if (!title.trim()) return;
+    setState(s => ({
+      ...s,
+      tasks: [{
+        id:`t-${Date.now()}`, title: title.trim(), notes:'',
+        due: due || null, quadrant, listId,
+        done:false, created: Date.now(),
+      }, ...s.tasks],
+    }));
+    setTitle(''); setOpen(false);
+    setQuadrant(defaultQuadrant); setDue(defaultDate || ''); setListId(defaultListId || 'l-inbox');
+  };
+
+  return (
+    <div className="card-soft mb-3 overflow-hidden">
+      <div className="flex items-center gap-2 p-2.5">
+        <I.plus className="w-4 h-4 text-bone-400 ml-1.5"/>
+        <input value={title} onChange={e=>setTitle(e.target.value)}
+          onKeyDown={e=>{ if (e.key==='Enter') submit(); if (e.key==='Escape') setOpen(false); }}
+          onFocus={()=>setOpen(true)}
+          placeholder="Capture a task…"
+          className="flex-1 bg-transparent text-sm text-bone-100 placeholder:text-bone-400/70"/>
+        {title && <button onClick={submit} className="btn px-3 py-1.5 rounded-md bg-strategy text-ink-950 text-xs font-semibold">Add</button>}
+      </div>
+      {open && (
+        <div className="border-t border-ink-700 p-2.5 space-y-2 fadeUp">
+          <div className="flex gap-2 items-center text-xs">
+            <input type="date" value={due} onChange={e=>setDue(e.target.value)}
+              className="bg-ink-800 border border-ink-700 rounded px-2 py-1 text-bone-100 font-mono"/>
+            <select value={quadrant} onChange={e=>setQuadrant(e.target.value)}
+              className="bg-ink-800 border border-ink-700 rounded px-2 py-1 text-bone-100">
+              {QUADS.map(q => <option key={q.id} value={q.id}>{q.title}</option>)}
+            </select>
+            <select value={listId} onChange={e=>setListId(e.target.value)}
+              className="bg-ink-800 border border-ink-700 rounded px-2 py-1 text-bone-100">
+              {state.lists.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+            </select>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------
+   TASK ROW
+------------------------------------------------------------------- */
+function TaskRow({ t, state, setState, compact, draggable, onDragStart }) {
+  const [editing, setEditing] = useState(false);
+  const list = state.lists.find(l => l.id === t.listId);
+  const q = QUADS.find(x => x.id === t.quadrant);
+
+  const toggle = () => setState(s => ({
+    ...s,
+    tasks: s.tasks.map(x => x.id === t.id ? { ...x, done: !x.done, doneAt: !x.done ? Date.now() : null } : x),
+  }));
+  const remove = () => setState(s => ({ ...s, tasks: s.tasks.filter(x => x.id !== t.id) }));
+
+  return (
+    <>
+      <div
+        draggable={draggable}
+        onDragStart={(e)=>onDragStart && onDragStart(e, t)}
+        className={`group flex items-start gap-2.5 px-2.5 py-2 rounded-lg hover:bg-ink-800/60 transition-colors ${t.done?'opacity-50':''}`}>
+        <button onClick={toggle} className={`tick mt-0.5 ${t.done?'on':''}`} aria-label="toggle">
+          {t.done && <I.check className="w-3 h-3"/>}
+        </button>
+        <div className="flex-1 min-w-0">
+          <div className={`text-sm leading-snug ${t.done ? 'line-through text-bone-400' : 'text-bone-100'} cursor-pointer`}
+               onClick={()=>setEditing(true)}>
+            {t.title}
+          </div>
+          {!compact && (
+            <div className="flex items-center gap-2 mt-1 text-[10px] font-mono tracking-wider text-bone-400">
+              {t.due && <span className={t.due < todayKey() && !t.done ? 'text-combat' : ''}>{t.due}</span>}
+              {q && <span className="px-1.5 rounded-sm border border-ink-700">{q.title.toUpperCase()}</span>}
+              {list && <span style={{ color: list.color }}>· {list.name}</span>}
+            </div>
+          )}
+        </div>
+        <button onClick={remove} className="opacity-0 group-hover:opacity-100 text-bone-400 hover:text-combat transition-opacity">
+          <I.x className="w-4 h-4"/>
+        </button>
+      </div>
+      {editing && <TaskEditModal t={t} state={state} setState={setState} onClose={()=>setEditing(false)}/>}
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------
+   TASK EDIT MODAL
+------------------------------------------------------------------- */
+function TaskEditModal({ t, state, setState, onClose }) {
+  const [title, setTitle] = useState(t.title);
+  const [notes, setNotes] = useState(t.notes || '');
+  const [due,   setDue]   = useState(t.due || '');
+  const [quadrant, setQuadrant] = useState(t.quadrant || 'plan');
+  const [listId, setListId] = useState(t.listId || 'l-inbox');
+
+  const save = () => {
+    setState(s => ({ ...s, tasks: s.tasks.map(x => x.id === t.id ? { ...x, title: title.trim(), notes, due: due||null, quadrant, listId } : x) }));
+    onClose();
+  };
+  return (
+    <Modal onClose={onClose} title="Edit task">
+      <Field label="Title">
+        <input autoFocus value={title} onChange={e=>setTitle(e.target.value)}
+          className="w-full bg-ink-800 border border-ink-700 rounded-lg px-3 py-2 text-bone-100"/>
+      </Field>
+      <Field label="Notes">
+        <textarea rows={3} value={notes} onChange={e=>setNotes(e.target.value)}
+          className="w-full bg-ink-800 border border-ink-700 rounded-lg px-3 py-2 text-bone-100 text-sm scrollbar"/>
+      </Field>
+      <div className="grid grid-cols-3 gap-3">
+        <Field label="Due">
+          <input type="date" value={due} onChange={e=>setDue(e.target.value)}
+            className="w-full bg-ink-800 border border-ink-700 rounded-lg px-2 py-2 text-bone-100 font-mono text-sm"/>
+        </Field>
+        <Field label="Quadrant">
+          <select value={quadrant} onChange={e=>setQuadrant(e.target.value)}
+            className="w-full bg-ink-800 border border-ink-700 rounded-lg px-2 py-2 text-bone-100 text-sm">
+            {QUADS.map(q => <option key={q.id} value={q.id}>{q.title}</option>)}
+          </select>
+        </Field>
+        <Field label="List">
+          <select value={listId} onChange={e=>setListId(e.target.value)}
+            className="w-full bg-ink-800 border border-ink-700 rounded-lg px-2 py-2 text-bone-100 text-sm">
+            {state.lists.map(l => <option key={l.id} value={l.id}>{l.name}</option>)}
+          </select>
+        </Field>
+      </div>
+      <div className="flex justify-end gap-2 pt-2">
+        <button onClick={onClose} className="btn px-4 py-2 rounded-lg border border-ink-700 text-bone-300 text-sm">Cancel</button>
+        <button onClick={save} className="btn px-4 py-2 rounded-lg bg-bone-100 text-ink-950 font-semibold text-sm">Save</button>
+      </div>
+    </Modal>
+  );
+}
+
+/* ------------------------------------------------------------------
+   HABIT CHECKLIST (Today view)
+------------------------------------------------------------------- */
+function HabitChecklist({ habits, log, toggle, state }) {
+  if (!habits.length) return <EmptyHint text="No habits scheduled for this day."/>;
+  const grouped = PILLARS.map(p => ({ pillar: p, items: habits.filter(h => h.pillar === p.id) })).filter(g => g.items.length);
+
+  /* compute streak per habit */
+  const streakFor = (habitId, days) => {
+    let s = 0, cursor = new Date(parseKey(state.ui.selectedDate));
+    while (true) {
+      const k = fmtKey(cursor);
+      if (!days.includes(cursor.getDay())) { cursor = addDays(cursor, -1); if (s>365) break; continue; }
+      if ((state.logs[k]||{})[habitId]) { s++; cursor = addDays(cursor, -1); } else break;
+      if (s > 365) break;
+    }
+    return s;
+  };
+
+  return (
+    <div className="space-y-3">
+      {grouped.map(g => (
+        <div key={g.pillar.id} className="card-soft p-3">
+          <div className="flex items-center justify-between mb-2">
+            <div className="text-[10px] font-mono tracking-widest" style={{ color: g.pillar.color }}>{g.pillar.name.toUpperCase()}</div>
+            <div className="font-display italic text-bone-400 text-xs" style={{ direction:'rtl' }}>{g.pillar.arabic}</div>
+          </div>
+          <div className="space-y-1">
+            {g.items.map(h => {
+              const on = !!log[h.id];
+              const s = streakFor(h.id, h.days);
+              return (
+                <button key={h.id} onClick={()=>toggle(h.id)}
+                  className="w-full flex items-center gap-2 text-left px-1.5 py-1 rounded hover:bg-ink-800/60 transition-colors">
+                  <div className={`tick ${on?'on':''}`} style={on ? { background: g.pillar.color, borderColor: g.pillar.color } : {}}>
+                    {on && <I.check className="w-3 h-3" style={{color:'#0a0a0b'}}/>}
+                  </div>
+                  <div className="flex-1 text-sm text-bone-100 leading-tight">{h.name}</div>
+                  {s > 0 && <div className="font-mono text-[10px] text-bone-400 flex items-center gap-0.5"><I.flame className="w-3 h-3"/>{s}</div>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------
+   HABITS VIEW  ─ manage all habits with heatmaps
+------------------------------------------------------------------- */
+function HabitsView({ state, setState }) {
+  const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState(null);
+
+  const grouped = PILLARS.map(p => ({ pillar: p, items: state.habits.filter(h => h.pillar === p.id) }));
+
+  return (
+    <div className="pt-6 fadeUp">
+      <div className="flex items-end justify-between mb-4">
+        <SectionHeading kicker="Discipline" title="Habits across the five pillars" sub="Deen · Tech · Combat · Strategy · Character"/>
+        <button onClick={()=>setAdding(true)} className="btn px-4 py-2 rounded-lg bg-strategy text-ink-950 font-semibold text-sm flex items-center gap-1.5"><I.plus className="w-4 h-4"/>New habit</button>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        {grouped.map(g => (
+          <div key={g.pillar.id} className="card p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-8 rounded-full" style={{ background: g.pillar.color }}/>
+                <div>
+                  <div className="font-display text-xl text-bone-100 leading-none">{g.pillar.name}</div>
+                  <div className="text-[10px] font-mono tracking-widest text-bone-400 mt-1">{g.items.length} HABIT{g.items.length===1?'':'S'}</div>
+                </div>
+              </div>
+              <div className="font-display italic text-bone-400 text-lg" style={{ direction:'rtl' }}>{g.pillar.arabic}</div>
+            </div>
+            <div className="space-y-3">
+              {g.items.length === 0
+                ? <div className="text-xs text-bone-400 italic py-2">No habits for this pillar yet.</div>
+                : g.items.map(h => <HabitCard key={h.id} h={h} state={state} setState={setState} onEdit={()=>setEditing(h)}/>) }
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {(adding || editing) && (
+        <HabitModal habit={editing} onClose={()=>{ setAdding(false); setEditing(null); }}
+          onSave={(h)=>{
+            setState(s => {
+              const exists = s.habits.find(x => x.id === h.id);
+              return { ...s, habits: exists ? s.habits.map(x=>x.id===h.id?h:x) : [...s.habits, h] };
+            });
+            setAdding(false); setEditing(null);
+          }}
+          onDelete={(id)=>{ setState(s=>({ ...s, habits: s.habits.filter(x=>x.id!==id) })); setEditing(null); }}/>
+      )}
+    </div>
+  );
+}
+
+function HabitCard({ h, state, setState, onEdit }) {
+  const p = pillarById(h.pillar);
+  /* compute 30-day mini heatmap */
+  const days = useMemo(() => {
+    const out = [];
+    const today = new Date();
+    for (let i = 29; i >= 0; i--) {
+      const d = addDays(today, -i);
+      const k = fmtKey(d);
+      const scheduled = h.days.includes(d.getDay());
+      const done = (state.logs[k]||{})[h.id];
+      out.push({ k, scheduled, done });
+    }
+    return out;
+  }, [state.logs, h.id, h.days]);
+
+  /* current streak (only counts scheduled days) */
+  const streak = useMemo(() => {
+    let s = 0, cursor = new Date();
+    while (true) {
+      if (!h.days.includes(cursor.getDay())) { cursor = addDays(cursor, -1); if (s>365) break; continue; }
+      const k = fmtKey(cursor);
+      if ((state.logs[k]||{})[h.id]) { s++; cursor = addDays(cursor, -1); } else break;
+      if (s > 365) break;
+    }
+    return s;
+  }, [state.logs, h.id, h.days]);
+
+  /* 30-day completion rate (of scheduled days) */
+  const completion = useMemo(() => {
+    const sched = days.filter(d=>d.scheduled);
+    if (!sched.length) return 0;
+    return Math.round(sched.filter(d=>d.done).length / sched.length * 100);
+  }, [days]);
+
+  return (
+    <div className="rounded-lg border border-ink-700 p-3 bg-ink-900/40">
+      <div className="flex items-start justify-between gap-2 mb-2">
+        <div className="min-w-0">
+          <div className="font-medium text-bone-100 text-sm leading-tight">{h.name}</div>
+          <div className="font-mono text-[10px] tracking-wider text-bone-400 mt-1">
+            {h.days.length === 7 ? 'DAILY' : h.days.map(d=>DAY_SHORT[d].toUpperCase()).join(' · ')}
+          </div>
+        </div>
+        <button onClick={onEdit} className="text-bone-400 hover:text-bone-100"><I.edit className="w-4 h-4"/></button>
+      </div>
+      <div className="flex items-center gap-3 mb-2">
+        <div className="flex-1 h-1.5 rounded-full bg-ink-700 overflow-hidden">
+          <div className="h-full" style={{ width: `${completion}%`, background: p.color }}/>
+        </div>
+        <div className="font-mono text-[10px] text-bone-400 w-16 text-right">{completion}% · 30D</div>
+      </div>
+      <div className="flex items-center justify-between">
+        <div className="flex gap-[2px]">
+          {days.map((d,i) => {
+            let cls = 'heat-0';
+            if (d.done) cls = 'heat-4';
+            else if (d.scheduled) cls = 'heat-1';
+            return <div key={i} className={`w-2 h-3.5 rounded-[2px] ${cls}`} title={`${d.k}${d.done?' · done':''}`} style={d.done ? { background: p.color } : (d.scheduled ? { background: `${p.color}26` } : {})}/>;
+          })}
+        </div>
+        {streak > 0 && (
+          <div className="font-mono text-xs flex items-center gap-1" style={{ color: p.color }}>
+            <I.flame className="w-3 h-3"/>{streak}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function HabitModal({ habit, onClose, onSave, onDelete }) {
+  const isNew = !habit;
+  const [name, setName] = useState(habit?.name || '');
+  const [pillar, setPillar] = useState(habit?.pillar || 'deen');
+  const [days, setDays] = useState(habit?.days || [0,1,2,3,4,5,6]);
+
+  const toggleDay = (d) => setDays(ds => ds.includes(d) ? ds.filter(x=>x!==d) : [...ds, d].sort());
+
+  const save = () => {
+    if (!name.trim() || !days.length) return;
+    onSave({ id: habit?.id || `h-${Date.now()}`, name: name.trim(), pillar, days, created: habit?.created || Date.now() });
+  };
+
+  return (
+    <Modal onClose={onClose} title={isNew ? 'New habit' : 'Edit habit'}>
+      <Field label="Habit">
+        <input autoFocus value={name} onChange={e=>setName(e.target.value)}
+          placeholder="Read 10 pages of Mukhtasar Sahih Muslim"
+          className="w-full bg-ink-800 border border-ink-700 rounded-lg px-3 py-2 text-bone-100"/>
+      </Field>
+      <Field label="Pillar">
+        <div className="grid grid-cols-5 gap-2">
+          {PILLARS.map(p => (
+            <button key={p.id} onClick={()=>setPillar(p.id)}
+              className={`btn px-2 py-2 rounded-lg text-xs font-medium ${pillar===p.id ? `glow-${p.tw}` : 'border border-ink-700'}`}
+              style={pillar===p.id ? { background: `${p.color}22`, color: p.color } : { color:'#9a9788' }}>
+              {p.name}
+            </button>
+          ))}
+        </div>
+      </Field>
+      <Field label="Schedule">
+        <div className="flex gap-1.5 flex-wrap">
+          {DAY_SHORT.map((d,i) => (
+            <button key={d} onClick={()=>toggleDay(i)}
+              className={`btn px-3 py-1.5 rounded-md text-xs font-mono tracking-wider ${days.includes(i) ? 'bg-strategy text-ink-950 font-semibold' : 'border border-ink-700 text-bone-400'}`}>
+              {d.toUpperCase()}
+            </button>
+          ))}
+        </div>
+        <div className="flex gap-2 mt-2">
+          <button onClick={()=>setDays([0,1,2,3,4,5,6])} className="text-[10px] font-mono tracking-wider text-bone-400 hover:text-bone-100">DAILY</button>
+          <button onClick={()=>setDays([1,2,3,4,5])} className="text-[10px] font-mono tracking-wider text-bone-400 hover:text-bone-100">WEEKDAYS</button>
+          <button onClick={()=>setDays([1,4])} className="text-[10px] font-mono tracking-wider text-deen hover:text-bone-100">MON/THU (FAST)</button>
+        </div>
+      </Field>
+      <div className="flex justify-between gap-2 pt-2">
+        {!isNew && <button onClick={()=>onDelete(habit.id)} className="btn px-3 py-2 rounded-lg text-combat border border-combat/30 hover:bg-combat/10 text-sm flex items-center gap-1.5"><I.trash className="w-4 h-4"/>Delete</button>}
+        <div className="flex-1"/>
+        <button onClick={onClose} className="btn px-4 py-2 rounded-lg border border-ink-700 text-bone-300 text-sm">Cancel</button>
+        <button onClick={save} className="btn px-4 py-2 rounded-lg bg-bone-100 text-ink-950 font-semibold text-sm">Save</button>
+      </div>
+    </Modal>
+  );
+}
+
+/* ------------------------------------------------------------------
+   TASKS VIEW  ─ TickTick style: lists + tasks
+------------------------------------------------------------------- */
+function TasksView({ state, setState }) {
+  const [activeList, setActiveList] = useState('all');
+  const [filter, setFilter] = useState('open'); /* open | done | all */
+  const [newListName, setNewListName] = useState('');
+  const [addingList, setAddingList] = useState(false);
+
+  const filtered = state.tasks.filter(t => {
+    if (activeList !== 'all' && t.listId !== activeList) return false;
+    if (filter === 'open' && t.done) return false;
+    if (filter === 'done' && !t.done) return false;
+    return true;
+  });
+
+  const addList = () => {
+    if (!newListName.trim()) return;
+    const id = `l-${Date.now()}`;
+    setState(s => ({ ...s, lists: [...s.lists, { id, name: newListName.trim(), color:'#c9c6b8' }] }));
+    setActiveList(id); setNewListName(''); setAddingList(false);
+  };
+
+  return (
+    <div className="pt-6 fadeUp grid grid-cols-12 gap-4 lg:gap-6">
+      {/* lists sidebar */}
+      <aside className="col-span-12 md:col-span-3">
+        <SectionHeading kicker="Lists" title="Projects" sub="Group what belongs together"/>
+        <div className="card-soft p-2 space-y-0.5">
+          <ListButton active={activeList==='all'} onClick={()=>setActiveList('all')} label="All tasks" count={state.tasks.length} color="#f4f3ee"/>
+          {state.lists.map(l => (
+            <ListButton key={l.id} active={activeList===l.id} onClick={()=>setActiveList(l.id)}
+              label={l.name} color={l.color}
+              count={state.tasks.filter(t=>t.listId===l.id).length}/>
+          ))}
+          {addingList ? (
+            <div className="flex gap-1 p-1">
+              <input autoFocus value={newListName} onChange={e=>setNewListName(e.target.value)}
+                onKeyDown={e=>{ if(e.key==='Enter')addList(); if(e.key==='Escape')setAddingList(false); }}
+                placeholder="List name…" className="flex-1 bg-ink-800 border border-ink-700 rounded px-2 py-1 text-xs text-bone-100"/>
+              <button onClick={addList} className="px-2 rounded bg-strategy text-ink-950 text-xs font-semibold">Add</button>
+            </div>
+          ) : (
+            <button onClick={()=>setAddingList(true)} className="w-full text-left px-2.5 py-1.5 text-xs text-bone-400 hover:text-bone-100 flex items-center gap-1.5"><I.plus className="w-3.5 h-3.5"/>New list</button>
+          )}
+        </div>
+      </aside>
+
+      {/* tasks */}
+      <section className="col-span-12 md:col-span-9">
+        <div className="flex items-end justify-between mb-3 gap-3 flex-wrap">
+          <SectionHeading kicker="Tasks" title={activeList==='all' ? 'All tasks' : (state.lists.find(l=>l.id===activeList)?.name || 'Tasks')} sub={`${filtered.length} item${filtered.length===1?'':'s'}`}/>
+          <div className="flex gap-1 bg-ink-800 rounded-lg p-1 text-xs">
+            {['open','done','all'].map(f => (
+              <button key={f} onClick={()=>setFilter(f)}
+                className={`px-3 py-1 rounded-md ${filter===f ? 'bg-bone-100 text-ink-950 font-semibold' : 'text-bone-400'}`}>{f.toUpperCase()}</button>
+            ))}
+          </div>
+        </div>
+        <QuickAddTask state={state} setState={setState} defaultListId={activeList==='all'?'l-inbox':activeList}/>
+        <div className="card p-2">
+          {filtered.length === 0
+            ? <EmptyHint text="Nothing here."/>
+            : filtered.map(t => <TaskRow key={t.id} t={t} state={state} setState={setState}/>) }
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ListButton({ active, onClick, label, count, color }) {
+  return (
+    <button onClick={onClick} className={`w-full flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm transition-colors ${active ? 'bg-ink-700 text-bone-100' : 'text-bone-300 hover:bg-ink-800'}`}>
+      <span className="w-2 h-2 rounded-full" style={{ background: color }}/>
+      <span className="flex-1 text-left truncate">{label}</span>
+      <span className="font-mono text-[10px] text-bone-400">{count}</span>
+    </button>
+  );
+}
+
+/* ------------------------------------------------------------------
+   MATRIX VIEW  ─ Eisenhower (drag between quadrants)
+------------------------------------------------------------------- */
+function MatrixView({ state, setState }) {
+  const [dragged, setDragged] = useState(null);
+  const onDragStart = (e, t) => { setDragged(t.id); e.dataTransfer.effectAllowed = 'move'; };
+  const onDropTo = (qid) => {
+    if (!dragged) return;
+    setState(s => ({ ...s, tasks: s.tasks.map(t => t.id === dragged ? { ...t, quadrant: qid } : t) }));
+    setDragged(null);
+  };
+
+  const open = state.tasks.filter(t => !t.done);
+
+  return (
+    <div className="pt-6 fadeUp">
+      <div className="flex items-end justify-between mb-3 gap-3 flex-wrap">
+        <SectionHeading kicker="Eisenhower" title="The matrix" sub="Drag tasks between quadrants · or assign at capture"/>
+        <div className="text-xs text-bone-400 italic max-w-md">
+          “What is important is seldom urgent and what is urgent is seldom important.” — D. Eisenhower
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {QUADS.map(q => {
+          const items = open.filter(t => (t.quadrant || 'plan') === q.id);
+          return (
+            <div key={q.id}
+              onDragOver={(e)=>{ e.preventDefault(); e.currentTarget.classList.add('drag-target'); }}
+              onDragLeave={(e)=>e.currentTarget.classList.remove('drag-target')}
+              onDrop={(e)=>{ e.preventDefault(); e.currentTarget.classList.remove('drag-target'); onDropTo(q.id); }}
+              className={`card ${q.cls} p-4 min-h-[260px]`}>
+              <div className="flex items-start justify-between mb-1">
+                <div>
+                  <div className="font-display text-2xl text-bone-100 leading-none">{q.title}</div>
+                  <div className="text-[10px] font-mono tracking-widest text-bone-400 mt-1.5">{q.sub.toUpperCase()}</div>
+                </div>
+                <div className="font-mono text-xs text-bone-400">{items.length}</div>
+              </div>
+              <div className="text-xs text-bone-400 italic mb-3">{q.hint}</div>
+              <QuickAddTask state={state} setState={setState} defaultQuadrant={q.id}/>
+              <div>
+                {items.length === 0
+                  ? <div className="text-xs text-bone-400/60 italic px-2 py-3 text-center">— empty —</div>
+                  : items.map(t => <TaskRow key={t.id} t={t} state={state} setState={setState} draggable onDragStart={onDragStart}/>) }
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------
+   STATS VIEW
+------------------------------------------------------------------- */
+function StatsView({ state, setState }) {
+  /* 90-day pillar performance */
+  const pillarStats = useMemo(() => {
+    const today = new Date();
+    const days = 90;
+    return PILLARS.map(p => {
+      const hs = state.habits.filter(h => h.pillar === p.id);
+      let scheduled = 0, done = 0;
+      for (let i = 0; i < days; i++) {
+        const d = addDays(today, -i); const k = fmtKey(d);
+        const log = state.logs[k] || {};
+        hs.forEach(h => { if (h.days.includes(d.getDay())) { scheduled++; if (log[h.id]) done++; } });
+      }
+      return { pillar: p, scheduled, done, pct: scheduled ? Math.round(done/scheduled*100) : 0 };
+    });
+  }, [state.logs, state.habits]);
+
+  /* 30-day completion bar chart */
+  const last30 = useMemo(() => {
+    const today = new Date();
+    const out = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = addDays(today, -i); const k = fmtKey(d);
+      const hs = state.habits.filter(h => h.days.includes(d.getDay()));
+      const log = state.logs[k] || {};
+      const done = hs.filter(h => log[h.id]).length;
+      out.push({ k, day: DAY_SHORT[d.getDay()], date: d.getDate(), pct: hs.length ? done/hs.length : 0 });
+    }
+    return out;
+  }, [state.logs, state.habits]);
+
+  /* tasks done by day for 14 days */
+  const tasksByDay = useMemo(() => {
+    const out = {}; const today = new Date();
+    for (let i = 13; i >= 0; i--) { const k = fmtKey(addDays(today, -i)); out[k] = 0; }
+    state.tasks.forEach(t => {
+      if (t.done && t.doneAt) {
+        const k = fmtKey(new Date(t.doneAt));
+        if (k in out) out[k]++;
+      }
+    });
+    return Object.entries(out).map(([k,v]) => ({ k, v }));
+  }, [state.tasks]);
+
+  const totalDone = state.tasks.filter(t=>t.done).length;
+  const totalOpen = state.tasks.filter(t=>!t.done).length;
+
+  return (
+    <div className="pt-6 fadeUp space-y-6">
+      <SectionHeading kicker="Stats" title="The numbers don't lie" sub="90-day view across the five pillars"/>
+
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {pillarStats.map(({ pillar, scheduled, done, pct }) => (
+          <div key={pillar.id} className="card p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="font-display text-bone-100 text-lg">{pillar.name}</div>
+              <div className="w-2 h-2 rounded-full" style={{ background: pillar.color }}/>
+            </div>
+            <div className="font-display text-4xl leading-none" style={{ color: pillar.color }}>{pct}<span className="text-xl text-bone-400">%</span></div>
+            <div className="text-[10px] font-mono tracking-wider text-bone-400 mt-1">{done} / {scheduled} DAYS</div>
+            <div className="mt-3 h-1.5 rounded-full bg-ink-700 overflow-hidden">
+              <div className="h-full" style={{ width: `${pct}%`, background: pillar.color }}/>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="card p-5">
+          <div className="flex items-end justify-between mb-4">
+            <div>
+              <div className="text-[10px] font-mono tracking-widest text-strategy">LAST 30 DAYS</div>
+              <div className="font-display text-xl text-bone-100 mt-1">Habit completion</div>
+            </div>
+            <div className="font-mono text-xs text-bone-400">
+              avg {Math.round(last30.reduce((a,b)=>a+b.pct,0)/last30.length*100)}%
+            </div>
+          </div>
+          <div className="flex items-end gap-1 h-32">
+            {last30.map(d => (
+              <div key={d.k} className="flex-1 flex flex-col items-center gap-1 group" title={`${d.k}: ${Math.round(d.pct*100)}%`}>
+                <div className="w-full rounded-t-sm transition-all"
+                  style={{ height: `${Math.max(2, d.pct*100)}%`,
+                  background: d.pct >= .8 ? '#10b981' : d.pct >= .5 ? '#f59e0b' : '#3a3a44' }}/>
+              </div>
+            ))}
+          </div>
+          <div className="flex justify-between mt-2 font-mono text-[10px] text-bone-400">
+            <span>{last30[0]?.k.slice(5)}</span>
+            <span>{last30[last30.length-1]?.k.slice(5)}</span>
+          </div>
+        </div>
+
+        <div className="card p-5">
+          <div className="flex items-end justify-between mb-4">
+            <div>
+              <div className="text-[10px] font-mono tracking-widest text-strategy">TASKS</div>
+              <div className="font-display text-xl text-bone-100 mt-1">Throughput</div>
+            </div>
+            <div className="text-right">
+              <div className="font-mono text-xs text-bone-400">DONE / OPEN</div>
+              <div className="font-display text-2xl text-bone-100 leading-none">{totalDone} <span className="text-bone-400 text-lg">/</span> {totalOpen}</div>
+            </div>
+          </div>
+          <div className="flex items-end gap-1 h-32">
+            {tasksByDay.map(d => {
+              const max = Math.max(1, ...tasksByDay.map(x=>x.v));
+              return (
+                <div key={d.k} className="flex-1 flex flex-col items-center gap-1 group" title={`${d.k}: ${d.v} done`}>
+                  <div className="w-full rounded-t-sm bg-tech transition-all"
+                    style={{ height: `${(d.v/max)*100 || 2}%` }}/>
+                  <div className="font-mono text-[9px] text-bone-400">{d.k.slice(-2)}</div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+
+      <DangerZone state={state} setState={setState}/>
+    </div>
+  );
+}
+
+function DangerZone({ state, setState }) {
+  const exportData = () => {
+    const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `madinah-${todayKey()}.json`;
+    document.body.appendChild(a); a.click(); a.remove();
+    URL.revokeObjectURL(url);
+  };
+  const importData = (e) => {
+    const f = e.target.files?.[0]; if (!f) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      try { const parsed = JSON.parse(reader.result); if (parsed.habits) setState(parsed); }
+      catch(err){ alert('Import failed: ' + err.message); }
+    };
+    reader.readAsText(f);
+    e.target.value = '';
+  };
+  const reset = () => {
+    if (confirm('Wipe everything and restore the default seed?')) setState(SEED());
+  };
+
+  return (
+    <div className="card p-5">
+      <div className="text-[10px] font-mono tracking-widest text-bone-400">DATA</div>
+      <div className="font-display text-xl text-bone-100 mt-1 mb-3">Backup, restore, reset</div>
+      <div className="flex flex-wrap gap-2">
+        <button onClick={exportData} className="btn px-3 py-2 rounded-lg border border-ink-700 hover:bg-ink-800 text-bone-300 text-sm">Export JSON</button>
+        <label className="btn px-3 py-2 rounded-lg border border-ink-700 hover:bg-ink-800 text-bone-300 text-sm cursor-pointer">
+          Import JSON
+          <input type="file" accept="application/json" className="hidden" onChange={importData}/>
+        </label>
+        <button onClick={reset} className="btn px-3 py-2 rounded-lg border border-combat/40 text-combat hover:bg-combat/10 text-sm">Wipe & re-seed</button>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------
+   PRIMITIVES
+------------------------------------------------------------------- */
+function Modal({ children, onClose, title }) {
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [onClose]);
+  return (
+    <div className="fixed inset-0 z-50 bg-ink-950/80 backdrop-blur-sm flex items-center justify-center p-4 fadeUp" onClick={onClose}>
+      <div className="card max-w-md w-full p-5 space-y-3" onClick={e=>e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-1">
+          <div className="font-display text-2xl text-bone-100">{title}</div>
+          <button onClick={onClose} className="text-bone-400 hover:text-bone-100"><I.x className="w-5 h-5"/></button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, children }) {
+  return (
+    <div>
+      <div className="text-[10px] font-mono tracking-widest text-bone-400 mb-1.5">{label.toUpperCase()}</div>
+      {children}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>
